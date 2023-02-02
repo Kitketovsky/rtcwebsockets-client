@@ -1,6 +1,6 @@
-export const rtcCreateOffer = async (p2p: RTCPeerConnection, ws: WebSocket) => {
+export const rtcCreateOffer = async (p2p: RTCPeerConnection) => {
   const offer = await p2p.createOffer();
   await p2p.setLocalDescription(offer);
 
-  ws.send(JSON.stringify({ type: "offer", offer }));
+  return offer;
 };

@@ -1,26 +1,16 @@
-import { useEffect } from "react";
-import io from "socket.io-client";
-import { registerRTCHandlers } from "./controllers/registerRTCHandlers";
-import { registerClientStatusHandlers } from "./controllers/registerClientStatusHandlers";
+import { useVideoCall } from "./hooks/useVideoCall";
+import { VideoPlayer } from "./components/VideoPlayer/VideoPlayer";
 function App() {
-  useEffect(() => {
-    const socket = io("http://localhost:8000");
-
-    const onConnection = () => {
-      registerClientStatusHandlers(socket);
-      registerRTCHandlers(socket);
-    };
-
-    socket.on("connect", onConnection);
-
-    return () => {
-      socket.close();
-    };
-  }, []);
+  const { localStream, remoteStreams } = useVideoCall();
 
   return (
     <div>
-      <h1>Hello React!</h1>
+      <h1>Hello WebRTC and Socket.IO!</h1>
+      {localStream && <VideoPlayer key={localStream.id} stream={localStream} />}
+
+      {remoteStreams.map(({ id, stream }) => (
+        <VideoPlayer key={id} stream={stream} />
+      ))}
     </div>
   );
 }
