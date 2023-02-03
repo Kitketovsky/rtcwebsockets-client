@@ -21,7 +21,7 @@ export const LobbyPage: React.FC<Props> = ({ username }) => {
   };
 
   const onJoinRoom = (id: string) => {
-    socket.emit(ACTIONS.JOIN, id);
+    socket.emit(ACTIONS.ROOM_JOIN, id);
   };
 
   return (
