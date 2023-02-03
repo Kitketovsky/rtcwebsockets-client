@@ -1,8 +1,4 @@
 export const ACTIONS = {
-  CONNECTED: "connected",
-  JOIN: "join",
-  CLIENT_NEW: "client_new",
-  CLIENT_DISCONNECTED: "client_disconnected",
   RTC_OFFER: "rtc:offer", // Sending an SDP offer
   RTC_ANSWER: "rtc:answer", // Sending an SDP answer
   RTC_ICE: "rtc:ice", // Exchange of ICE candidates
