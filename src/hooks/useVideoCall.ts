@@ -11,7 +11,6 @@ interface RemoteStreams {
   stream: MediaStream;
 }
 
-// TODO: On disconnect delete remote stream and close p2p connection
 // TODO: Room functionality
 // TODO: Toggle video and audio in a stream
 export const useVideoCall = () => {
@@ -50,7 +49,7 @@ export const useVideoCall = () => {
       socket.emit(ACTIONS.JOIN, { id: socket.id });
     });
 
-    socket.on(ACTIONS.NEW_CLIENT, async ({ id: idFrom }) => {
+    socket.on(ACTIONS.CLIENT_NEW, async ({ id: idFrom }) => {
       console.log(`A new client ${idFrom} connected!`);
 
       const { p2p } = rtcCreateConnection({
@@ -114,6 +113,17 @@ export const useVideoCall = () => {
         } catch (error) {
           console.log("Error adding ice candidate to RTCPeerConnection...");
         }
+      }
+    });
+
+    socket.on(ACTIONS.CLIENT_DISCONNECTED, ({ id: disconnectedUserId }) => {
+      setRemoteStreams((prevStreams) =>
+        prevStreams.filter(({ id }) => id !== disconnectedUserId)
+      );
+
+      if (p2psRef.current.has(disconnectedUserId)) {
+        p2psRef.current.get(disconnectedUserId)!.close();
+        p2psRef.current.delete(disconnectedUserId);
       }
     });
 
