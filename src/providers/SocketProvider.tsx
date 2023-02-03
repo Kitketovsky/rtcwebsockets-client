@@ -1,11 +1,11 @@
 import { SocketContext } from "../context/SocketContext";
 import React, { useEffect, useRef, useState } from "react";
-import io from "socket.io-client";
+import io, { Socket } from "socket.io-client";
 import { ISocketConnectionStatus, ISocketContext } from "../types";
 import { ACTIONS } from "../const/actions";
 
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
-  const socketRef = useRef(io("http://localhost:8000"));
+  const socketRef = useRef<Socket>();
 
   const [status, setStatus] = useState<ISocketConnectionStatus>("loading");
   const [rooms, setRooms] = useState<ISocketContext["rooms"]>([]);
@@ -16,14 +16,17 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    const socket = socketRef.current;
+    const socket = io("http://localhost:8000");
+
+    socketRef.current = socket;
 
     socket.on("connect", () => {
       setStatus("connect");
+      socket.emit(ACTIONS.ROOM_LIST);
     });
 
-    socket.on(ACTIONS.ROOM_LIST, (rooms) => {
-      setRooms(rooms);
+    socket.on(ACTIONS.ROOM_LIST, (remoteRooms) => {
+      setRooms(remoteRooms);
     });
 
     socket.on("disconnect", () => {
@@ -33,6 +36,10 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     socket.io.on("error", () => {
       setStatus("error");
     });
+
+    return () => {
+      socket.close();
+    };
   }, []);
 
   return (

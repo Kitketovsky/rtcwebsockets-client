@@ -25,7 +25,7 @@ export const rtcCreateConnection = ({
     // Как то нужно хранить ID ресипиента
     try {
       if (event.candidate) {
-        socket.emit(ACTIONS.ICE, {
+        socket.emit(ACTIONS.RTC_ICE, {
           idFrom,
           idTo,
           ice: event.candidate,
