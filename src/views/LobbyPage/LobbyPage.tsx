@@ -18,10 +18,12 @@ export const LobbyPage: React.FC<Props> = ({ username }) => {
   const onCreateRoom = (event: React.FormEvent, id: string) => {
     event.preventDefault();
     socket.emit(ACTIONS.ROOM_CREATE, id);
+    navigate(`/room:${id}`);
   };
 
   const onJoinRoom = (id: string) => {
     socket.emit(ACTIONS.ROOM_JOIN, id);
+    navigate(`/${id}`);
   };
 
   return (

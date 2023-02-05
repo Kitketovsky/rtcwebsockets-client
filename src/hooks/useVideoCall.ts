@@ -1,5 +1,4 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
-import io from "socket.io-client";
 import { ACTIONS } from "../const/actions";
 import { rtcCreateOffer } from "../functions/rtc/rtcCreateOffer";
 import { rtcCreateAnswer } from "../functions/rtc/rtcCreateAnswer";
@@ -20,7 +19,6 @@ export const useVideoCall = () => {
   const [localStream, setLocalStream] = useState<MediaStream>();
   const [remoteStreams, setRemoteStreams] = useState<RemoteStreams[]>([]);
 
-  const localStreamRef = useRef<MediaStream>();
   const p2psRef = useRef<Map<string, RTCPeerConnection>>(new Map());
 
   const onNewRemoteStream = useCallback(
@@ -34,27 +32,17 @@ export const useVideoCall = () => {
   );
 
   useEffect(() => {
-    if (!localStreamRef.current) {
-      navigator.mediaDevices
-        .getUserMedia({
-          video: true,
-        })
-        .then((locStream) => {
-          localStreamRef.current = locStream;
-          setLocalStream(locStream);
-        });
-    }
-
-    socket.on(ACTIONS.CLIENT_NEW, async ({ id: idFrom }) => {
+    socket.on(ACTIONS.ROOM_NEW_CLIENT_NOTIFICATION, async (idFrom) => {
       console.log(`A new client ${idFrom} connected!`);
 
-      const { p2p } = rtcCreateConnection({
+      const { p2p, localStream } = await rtcCreateConnection({
         idTo: idFrom,
         idFrom: socket.id,
         socket,
         onNewRemoteStream,
-        localStream: localStreamRef.current!,
       });
+
+      setLocalStream(localStream);
 
       if (!p2psRef.current.has(idFrom)) {
         p2psRef.current.set(idFrom, p2p);
@@ -69,17 +57,29 @@ export const useVideoCall = () => {
       });
     });
 
+    socket.on(ACTIONS.ROOM_CLIENT_LEAVE_NOTIFICATION, (disconnectedUserId) => {
+      setRemoteStreams((prevStreams) =>
+        prevStreams.filter(({ id }) => id !== disconnectedUserId)
+      );
+
+      console.log("someone left the room");
+
+      if (p2psRef.current.has(disconnectedUserId)) {
+        p2psRef.current.get(disconnectedUserId)!.close();
+        p2psRef.current.delete(disconnectedUserId);
+      }
+    });
+
     // Если мы новый пользователь, то мы получаем offer от существующих пользователей в комнате
     socket.on(ACTIONS.RTC_OFFER, async ({ idFrom, offer }) => {
-      console.log(`We got the offer from ${idFrom}!`);
-
-      const { p2p } = rtcCreateConnection({
+      const { p2p, localStream } = await rtcCreateConnection({
         idTo: idFrom,
         idFrom: socket.id,
         socket,
         onNewRemoteStream,
-        localStream: localStreamRef.current!,
       });
+
+      setLocalStream(localStream);
 
       const answer = await rtcCreateAnswer(p2p, offer);
 
@@ -95,8 +95,6 @@ export const useVideoCall = () => {
     });
 
     socket.on(ACTIONS.RTC_ANSWER, async ({ idFrom, answer }) => {
-      console.log(`We got the answer from ${idFrom}!`);
-
       const p2p = p2psRef.current.get(idFrom)!;
       await rtcAssignAnswer(p2p, answer);
     });
@@ -112,20 +110,9 @@ export const useVideoCall = () => {
       }
     });
 
-    socket.on(ACTIONS.CLIENT_DISCONNECTED, ({ id: disconnectedUserId }) => {
-      setRemoteStreams((prevStreams) =>
-        prevStreams.filter(({ id }) => id !== disconnectedUserId)
-      );
-
-      if (p2psRef.current.has(disconnectedUserId)) {
-        p2psRef.current.get(disconnectedUserId)!.close();
-        p2psRef.current.delete(disconnectedUserId);
-      }
-    });
-
     return () => {
-      socket.close();
-      p2psRef.current.forEach((p2p) => p2p.close());
+      socket.emit(ACTIONS.ROOM_LEAVE);
+      p2psRef.current;
     };
   }, []);
 

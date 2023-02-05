@@ -2,20 +2,22 @@ import { rtcConfiguration } from "../../const/rtcConfiguration";
 import { ACTIONS } from "../../const/actions";
 import { Socket } from "socket.io-client";
 
-export const rtcCreateConnection = ({
-  localStream,
+export const rtcCreateConnection = async ({
   socket,
   idFrom,
   idTo,
   onNewRemoteStream,
 }: {
-  localStream: MediaStream;
   socket: Socket;
   idFrom: string;
   idTo: string;
   onNewRemoteStream: (rs: MediaStream, idTo: string) => void;
 }) => {
   const p2p = new RTCPeerConnection(rtcConfiguration);
+
+  const localStream = await navigator.mediaDevices.getUserMedia({
+    video: true,
+  });
 
   localStream.getTracks().forEach((track) => {
     p2p.addTrack(track, localStream);
@@ -48,5 +50,5 @@ export const rtcCreateConnection = ({
     onNewRemoteStream(newRemoteStream, idTo);
   };
 
-  return { p2p };
+  return { p2p, localStream };
 };
