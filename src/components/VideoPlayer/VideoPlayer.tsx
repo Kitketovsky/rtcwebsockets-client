@@ -1,19 +1,28 @@
-import { useEffect, useRef } from "react";
+import { useMediaStreamTracks } from "../../hooks/useMediaStreamTracks";
 
 export const VideoPlayer = ({ stream }: { stream: MediaStream }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    videoRef.current!.srcObject = stream;
-  }, []);
+  const { videoRef, isVideoMuted, toggleVideo, toggleAudio, isAudioMuted } =
+    useMediaStreamTracks(stream);
 
   return (
-    <video
-      ref={videoRef}
-      style={{ width: 150 }}
-      playsInline
-      controls={false}
-      autoPlay
-    />
+    <div>
+      <video
+        ref={videoRef}
+        style={{ width: 150 }}
+        playsInline
+        controls={false}
+        autoPlay
+      />
+      {stream && (
+        <div>
+          <button onClick={toggleVideo}>
+            {isVideoMuted ? "Unmute" : "Mute"} video
+          </button>
+          <button onClick={toggleAudio}>
+            {isAudioMuted ? "Unmute" : "Mute"} audio
+          </button>
+        </div>
+      )}
+    </div>
   );
 };
