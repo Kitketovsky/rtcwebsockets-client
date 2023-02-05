@@ -4,8 +4,6 @@ import { VideoPlayer } from "../../components/VideoPlayer/VideoPlayer";
 export const ConversationPage = () => {
   const { localStream, remoteStreams } = useVideoCall();
 
-  console.log("localStream", localStream);
-  console.log("remoteStreams", remoteStreams);
   return (
     <div>
       <h1>Conversation Page</h1>

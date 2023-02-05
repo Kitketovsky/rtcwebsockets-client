@@ -24,7 +24,6 @@ export const rtcCreateConnection = async ({
   });
 
   p2p.onicecandidate = (event) => {
-    // Как то нужно хранить ID ресипиента
     try {
       if (event.candidate) {
         socket.emit(ACTIONS.RTC_ICE, {

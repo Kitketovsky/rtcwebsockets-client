@@ -11,8 +11,6 @@ interface RemoteStreams {
   stream: MediaStream;
 }
 
-// TODO: Room functionality
-// TODO: Toggle video and audio in a stream
 export const useVideoCall = () => {
   const { socket } = useContext(SocketContext)!;
 
@@ -33,8 +31,6 @@ export const useVideoCall = () => {
 
   useEffect(() => {
     socket.on(ACTIONS.ROOM_NEW_CLIENT_NOTIFICATION, async (idFrom) => {
-      console.log(`A new client ${idFrom} connected!`);
-
       const { p2p, localStream } = await rtcCreateConnection({
         idTo: idFrom,
         idFrom: socket.id,
@@ -62,15 +58,16 @@ export const useVideoCall = () => {
         prevStreams.filter(({ id }) => id !== disconnectedUserId)
       );
 
-      console.log("someone left the room");
+      const p2p = p2psRef.current;
 
-      if (p2psRef.current.has(disconnectedUserId)) {
-        p2psRef.current.get(disconnectedUserId)!.close();
-        p2psRef.current.delete(disconnectedUserId);
+      if (p2p.has(disconnectedUserId)) {
+        p2p.get(disconnectedUserId)!.close();
+        p2p.delete(disconnectedUserId);
       }
     });
 
-    // Если мы новый пользователь, то мы получаем offer от существующих пользователей в комнате
+    // Когда мы заходим в комнату, другие клиенты получают уведомление о нас и отправляют свои
+    // sdp offer, мы их принимаем, создаем p2p и отправляем sdp answer
     socket.on(ACTIONS.RTC_OFFER, async ({ idFrom, offer }) => {
       const { p2p, localStream } = await rtcCreateConnection({
         idTo: idFrom,
@@ -112,7 +109,9 @@ export const useVideoCall = () => {
 
     return () => {
       socket.emit(ACTIONS.ROOM_LEAVE);
-      p2psRef.current;
+      p2psRef.current.forEach((p2p) => {
+        p2p.close();
+      });
     };
   }, []);
 
